@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -43,27 +44,76 @@ import (
 //		}
 //		wg.Wait()
 //	}
-func TestConcurrentAddElement(t *testing.T) {
-	s := New()
+func TestConcurrentAddElement10Goroutine100000Loop(t *testing.T) {
 	var wg sync.WaitGroup
-	for nthGoroutine := 0; nthGoroutine < 10; nthGoroutine++ {
+
+	s := New()
+	numOfGoroutine := 10
+	numOfLoop := 100000
+	totalExpectElement := numOfGoroutine * numOfLoop
+
+	for nthGoroutine := 0; nthGoroutine < numOfGoroutine; nthGoroutine++ {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
-			for nthWork := 0; nthWork < 100; nthWork++ {
+			for nthWork := 0; nthWork < numOfLoop; nthWork++ {
 				s.Add(strconv.Itoa(n) + ".testing-" + strconv.Itoa(nthWork))
 			}
 
 		}(nthGoroutine)
 	}
 	wg.Wait()
-	require.Equal(t, 1000, s.Len())
+	require.Equal(t, totalExpectElement, s.Len())
+}
+func TestConcurrentAddElement100000Goroutine10Loop(t *testing.T) {
+	var wg sync.WaitGroup
 
-	// testGongurrency(100, 10, func(prefix string, num int) {
-	// 	set.Remove("prefix" + strconv.Itoa(num))
-	// })
-	// require.Equal(t, set.Len(), 0)
+	s := New()
+	numOfGoroutine := 100000
+	numOfLoop := 10
+	totalExpectElement := numOfGoroutine * numOfLoop
 
+	for nthGoroutine := 0; nthGoroutine < numOfGoroutine; nthGoroutine++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			for nthWork := 0; nthWork < numOfLoop; nthWork++ {
+				s.Add(strconv.Itoa(n) + ".testing-" + strconv.Itoa(nthWork))
+			}
+
+		}(nthGoroutine)
+	}
+	wg.Wait()
+	require.Equal(t, totalExpectElement, s.Len())
+}
+
+func TestConcurrentExclusiveLock100000Loop(t *testing.T) {
+	var wg sync.WaitGroup
+
+	s := New()
+	numOfGoroutine := 2
+	numOfLoop := 100000
+	for idx := 0; idx < numOfLoop; idx++ {
+		key := strconv.Itoa(idx) + ".testing-" + strconv.Itoa(idx)
+		for nthGoroutine := 0; nthGoroutine < numOfGoroutine; nthGoroutine++ {
+			wg.Add(1)
+			go func(n int) {
+				defer wg.Done()
+				if n == 0 {
+					s.Add(key)
+				} else {
+					for !s.Contains(key) {
+						time.Sleep(time.Nanosecond)
+					}
+					s.Remove(key)
+				}
+			}(nthGoroutine)
+		}
+		wg.Wait()
+	}
+
+	wg.Wait()
+	require.Equal(t, 0, s.Len())
 }
 
 // func TestConcurrentRemoveElement(t *testing.T) {}
