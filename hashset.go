@@ -1,6 +1,9 @@
 package hashset
 
-import "sync"
+import (
+	"reflect"
+	"sync"
+)
 
 // Set represents a thread-safe collection of unique elements.
 type Set struct {
@@ -23,6 +26,11 @@ func New(initial ...interface{}) *Set {
 func (s *Set) Add(element interface{}) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if IsComparable(element) {
+		s.hash[element] = true
+		return
+	}
+	element = MakeComparable(element)
 	s.hash[element] = true
 }
 
@@ -123,4 +131,32 @@ func (s *Set) ToSlice() []interface{} {
 	}
 	s.mu.RUnlock()
 	return uniTypeSlice
+}
+
+func MakeComparable(element interface{}) interface{} {
+	/*
+		Not comparable types: slice, map, function
+	*/
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 	}
+	// }()
+	elementType := reflect.TypeOf(element)
+	switch elementType.Kind() {
+	case reflect.Slice, reflect.Map, reflect.Func:
+		return reflect.ValueOf(element).Pointer()
+	default:
+		return element
+	}
+}
+
+// Powerful assertion comparable type by generic on compile time
+func IsComparable[T comparable](element T) bool {
+	defer func() bool {
+		if r := recover(); r != nil {
+			return false
+		}
+		return true
+	}()
+	return element == element
 }

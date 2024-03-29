@@ -24,29 +24,57 @@ import (
  3. difference
 
 5. 거의 모든타입 지원이 되어야한다.
- 1. 함수타입은 별도의 uuid와 포인터로 보관되어야한다.
- 2. 구조체타입도 uuid로 할까 마샬링으로 할까 했는데 uuid가 좋아보이넹
-
 6. 같은 set에 대해 동시작업이 원자성을 보장받아야한다.
 */
 
-// func testGongurrency(numOfGoroutine, numOfEashWork int, work func(prefix string, num int)) {
-// 	var wg sync.WaitGroup
-// 	for nthGoroutine := 0; nthGoroutine < numOfGoroutine; nthGoroutine++ {
-// 		wg.Add(1)
-// 		go func(n int) {
-// 			defer wg.Done()
-// 			for nthWork := 0; nthWork < numOfEashWork; nthWork++ {
-// 				work("testing-", nthWork)
-// 			}
+// Basic operations 0. Initialize
+func TestInitializeFromArguments(t *testing.T) {
+	s := New(1, 2, "3")
+	require.NotEmpty(t, s)
+	require.Equal(t, 3, s.Len())
 
-//			}(nthGoroutine)
-//		}
-//		wg.Wait()
-//	}
+	s.Add("3") // It lengths is 3, because Set already has "3"
+	require.NotEqual(t, 4, s.Len())
+}
+
+// Basic operations: 1. Add element
+func TestAddElement(t *testing.T) {
+	s := New()
+	require.NotEmpty(t, s)
+	require.Equal(t, 0, s.Len())
+	s.Add("Add")
+	s.Add(" multiple")
+	s.Add("values of")
+	s.Add(3)
+	s.Add("like this:")
+	s.Add([]int{1, 2, 3})
+	require.Equal(t, 6, s.Len())
+}
+
+// Basic operations: 2. Remove element
+func TestRemoveElement(t *testing.T) {
+	s := New("1", "2", 3)
+	require.NotEmpty(t, s)
+	require.Equal(t, 3, s.Len())
+	s.Remove("1")
+	s.Remove("multiple")
+	s.Remove("3")
+	require.Equal(t, 2, s.Len())
+}
+
+// Basic operations: 3.
+// func TestMembershipCheck(t *testing.T) {}
+
+// func TestDuplicate(t *testing.T)               {}
+// func TestConvertToSet(t *testing.T)            {}
+// func TestConvertToSlice(t *testing.T)          {}
+// func TestUnion(t *testing.T)                   {}
+// func TestIntersection(t *testing.T)            {}
+// func TestDifference(t *testing.T)              {}
+// func TestFunctionElement(t *testing.T)         {}
+// func TestStructElement(t *testing.T)           {}
 func TestConcurrentAddElement10Goroutine100000Loop(t *testing.T) {
 	var wg sync.WaitGroup
-
 	s := New()
 	numOfGoroutine := 10
 	numOfLoop := 100000
@@ -67,7 +95,6 @@ func TestConcurrentAddElement10Goroutine100000Loop(t *testing.T) {
 }
 func TestConcurrentAddElement100000Goroutine10Loop(t *testing.T) {
 	var wg sync.WaitGroup
-
 	s := New()
 	numOfGoroutine := 100000
 	numOfLoop := 10
@@ -116,13 +143,72 @@ func TestConcurrentExclusiveLock100000Loop(t *testing.T) {
 	require.Equal(t, 0, s.Len())
 }
 
-// func TestConcurrentRemoveElement(t *testing.T) {}
-// func TestMembershipCheck(t *testing.T)         {}
-// func TestDuplicate(t *testing.T)               {}
-// func TestConvertToSet(t *testing.T)            {}
-// func TestConvertToSlice(t *testing.T)          {}
-// func TestUnion(t *testing.T)                   {}
-// func TestIntersection(t *testing.T)            {}
-// func TestDifference(t *testing.T)              {}
-// func TestFunctionElement(t *testing.T)         {}
-// func TestStructElement(t *testing.T)           {}
+func TestConcurrentRemoveElement(t *testing.T) {
+	var wg sync.WaitGroup
+
+	s := New()
+	numOfGoroutine := 1000
+	numOfLoop := 10
+	totalExpectElement := numOfGoroutine * numOfLoop
+
+	for nthGoroutine := 0; nthGoroutine < numOfGoroutine; nthGoroutine++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			for nthWork := 0; nthWork < numOfLoop; nthWork++ {
+				s.Add(strconv.Itoa(n) + ".testing-" + strconv.Itoa(nthWork))
+			}
+
+		}(nthGoroutine)
+	}
+	wg.Wait()
+	require.Equal(t, totalExpectElement, s.Len())
+
+	for nthGoroutine := 0; nthGoroutine < numOfGoroutine; nthGoroutine++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			for nthWork := 0; nthWork < numOfLoop; nthWork++ {
+				s.Remove(strconv.Itoa(n) + ".testing-" + strconv.Itoa(nthWork))
+			}
+
+		}(nthGoroutine)
+	}
+	wg.Wait()
+	require.Equal(t, 0, s.Len())
+}
+
+func TestMembershipCheck(t *testing.T) {
+	var wg sync.WaitGroup
+
+	s := New()
+	numOfGoroutine := 10000
+	numOfLoop := 10
+	totalExpectElement := numOfGoroutine * numOfLoop
+
+	for nthGoroutine := 0; nthGoroutine < numOfGoroutine; nthGoroutine++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			for nthWork := 0; nthWork < numOfLoop; nthWork++ {
+				s.Add(strconv.Itoa(n) + ".testing-" + strconv.Itoa(nthWork))
+			}
+
+		}(nthGoroutine)
+	}
+	wg.Wait()
+
+	require.Equal(t, totalExpectElement, s.Len())
+	for nthGoroutine := 0; nthGoroutine < numOfGoroutine; nthGoroutine++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			for nthWork := 0; nthWork < numOfLoop; nthWork++ {
+				s.Add(strconv.Itoa(n) + ".testing-phase-two-" + strconv.Itoa(nthWork))
+				s.Remove(strconv.Itoa(n) + ".testing-" + strconv.Itoa(nthWork))
+			}
+
+		}(nthGoroutine)
+	}
+	wg.Wait()
+}
