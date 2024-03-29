@@ -11,25 +11,10 @@ A go library hashset for O(1)
 ```go
 import (
 	...
-	port "github.com/1eedaegon/go-hashset"
+	hashset "github.com/1eedaegon/go-hashset"
 	...
 )
 
-ports := port.Get(3)
-// ports is something like []int{10000, 10001, 10002}
-```
-
-Or
-
-```go
-import (
-	...
-	port "github.com/1eedaegon/go-hashset"
-	...
-)
-
-ports := port.GetS(3)
-// ports is something like []string{"10000", "10001", "10002"}
 ```
 
 ## License
