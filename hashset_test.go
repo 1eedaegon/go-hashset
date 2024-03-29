@@ -14,7 +14,6 @@ import (
  1. 추가
  2. 삭제
  3. 요소 확인
-
 1. 값의 중복이 없어야한다.
 2. slice가오면 set으로 변경되어야한다.
 3. set을 slice로 변경할 수 있어야한다.
@@ -22,7 +21,6 @@ import (
  1. intersection
  2. union
  3. difference
-
 5. 거의 모든타입 지원이 되어야한다.
 6. 같은 set에 대해 동시작업이 원자성을 보장받아야한다.
 */
@@ -35,6 +33,10 @@ func TestInitializeFromArguments(t *testing.T) {
 
 	s.Add("3") // It lengths is 3, because Set already has "3"
 	require.NotEqual(t, 4, s.Len())
+
+	s1 := New([]int{1, 2, 3})
+	require.Equal(t, 1, s1.Len()) // Not comparable type, just save pointer
+	require.False(t, s1.Contains(2))
 }
 
 // Basic operations: 1. Add element
