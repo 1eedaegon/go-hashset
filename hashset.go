@@ -12,12 +12,19 @@ type Set struct {
 }
 
 // New initializes and returns a new Set with optional initial elements.
-func New(initial ...interface{}) *Set {
+func New(initialValue ...interface{}) *Set {
 	s := &Set{
 		hash: make(map[interface{}]bool),
 	}
-	for _, v := range initial {
-		s.Add(v)
+	for _, iv := range initialValue {
+		v := reflect.ValueOf(iv)
+		if v.Kind() == reflect.Slice {
+			for i := 0; i < v.Len(); i++ {
+				s.Add(v.Index(i).Interface())
+			}
+		} else {
+			s.Add(iv)
+		}
 	}
 	return s
 }
@@ -26,11 +33,9 @@ func New(initial ...interface{}) *Set {
 func (s *Set) Add(element interface{}) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if IsComparable(element) {
-		s.hash[element] = true
-		return
+	if !IsComparable(element) {
+		element = MakeComparable(element)
 	}
-	element = MakeComparable(element)
 	s.hash[element] = true
 }
 
@@ -38,6 +43,9 @@ func (s *Set) Add(element interface{}) {
 func (s *Set) Remove(element interface{}) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if !IsComparable(element) {
+		element = MakeComparable(element)
+	}
 	delete(s.hash, element)
 }
 
@@ -45,6 +53,9 @@ func (s *Set) Remove(element interface{}) {
 func (s *Set) Contains(element interface{}) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	if !IsComparable(element) {
+		element = MakeComparable(element)
+	}
 	_, exists := s.hash[element]
 	return exists
 }
@@ -123,6 +134,7 @@ func (s *Set) Union(set *Set) *Set {
 	return &Set{hash: union}
 }
 
+// ToSlice function returns converted slice from this set
 func (s *Set) ToSlice() []interface{} {
 	uniTypeSlice := make([]interface{}, 0)
 	s.mu.RLock()
@@ -133,14 +145,11 @@ func (s *Set) ToSlice() []interface{} {
 	return uniTypeSlice
 }
 
+// MakeComparable returns pointer(address) not comparable types: slice, map, function
 func MakeComparable(element interface{}) interface{} {
 	/*
 		Not comparable types: slice, map, function
 	*/
-	// defer func() {
-	// 	if r := recover(); r != nil {
-	// 	}
-	// }()
 	elementType := reflect.TypeOf(element)
 	switch elementType.Kind() {
 	case reflect.Slice, reflect.Map, reflect.Func:

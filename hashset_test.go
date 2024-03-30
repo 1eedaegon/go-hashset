@@ -1,6 +1,7 @@
 package hashset
 
 import (
+	"reflect"
 	"strconv"
 	"sync"
 	"testing"
@@ -10,11 +11,6 @@ import (
 )
 
 /*
-0. 기본 연산
- 1. 추가
- 2. 삭제
- 3. 요소 확인
-1. 값의 중복이 없어야한다.
 2. slice가오면 set으로 변경되어야한다.
 3. set을 slice로 변경할 수 있어야한다.
 4. set(집합) 연산이 가능해야한다.
@@ -35,8 +31,8 @@ func TestInitializeFromArguments(t *testing.T) {
 	require.NotEqual(t, 4, s.Len())
 
 	s1 := New([]int{1, 2, 3})
-	require.Equal(t, 1, s1.Len()) // Not comparable type, just save pointer
-	require.False(t, s1.Contains(2))
+	require.Equal(t, 3, s1.Len())
+	require.True(t, s1.Contains(2))
 }
 
 // Basic operations: 1. Add element
@@ -64,17 +60,111 @@ func TestRemoveElement(t *testing.T) {
 	require.Equal(t, 2, s.Len())
 }
 
-// Basic operations: 3.
-// func TestMembershipCheck(t *testing.T) {}
+// Basic operations: 3. Check membership in set
+func TestMembershipCheck(t *testing.T) {
+	caseFunction := func() bool { return true }
+	s := New("1", "2", "3", 1, caseFunction)
+	require.NotEmpty(t, s)
+	require.Equal(t, 5, s.Len())
 
-// func TestDuplicate(t *testing.T)               {}
-// func TestConvertToSet(t *testing.T)            {}
-// func TestConvertToSlice(t *testing.T)          {}
-// func TestUnion(t *testing.T)                   {}
-// func TestIntersection(t *testing.T)            {}
-// func TestDifference(t *testing.T)              {}
-// func TestFunctionElement(t *testing.T)         {}
-// func TestStructElement(t *testing.T)           {}
+	require.True(t, s.Contains("1"))
+	require.True(t, s.Contains("2"))
+	require.True(t, s.Contains("3"))
+	require.False(t, s.Contains(2))
+	require.True(t, s.Contains(caseFunction))
+}
+
+func TestDuplicate(t *testing.T) {
+	// Same address testing
+	caseFunction := func() bool { return true }
+	caseMap := map[string]int{}
+	caseSlice := []int{1, 2, 3}
+	caseSliceTwo := []string{"1", "a", "b"}
+
+	s := New(caseFunction, caseMap, caseSlice, caseSliceTwo)
+	require.Equal(t, 8, s.Len())
+	s.Add(caseFunction)
+	s.Add(caseMap)
+	s.Add(caseSlice)
+	s.Add(caseSliceTwo)
+	require.Equal(t, 10, s.Len())
+
+	// However, if the same signature arguments address are different, it is not a duplicate
+	caseFunction2 := func() bool { return true }
+	caseMap2 := map[string]int{}
+	caseSlice2 := []int{1, 2, 3}
+	caseSliceTwo2 := []string{"1", "a", "b"}
+	s.Add(caseFunction2)
+	s.Add(caseMap2)
+	s.Add(caseSlice2)
+	s.Add(caseSliceTwo2)
+	// require.NotEqual(t, 4, s.Len())
+	require.Equal(t, 14, s.Len())
+
+	// Comparable types are duplicated checked.
+	s.Add(1)
+	s.Add(2)
+	s.Add("caseSlice2")
+	s.Add("caseSliceTwo2")
+	require.Equal(t, 16, s.Len())
+	s.Add(1)
+	s.Add(2)
+	s.Add("caseSlice2")
+	s.Add("caseSliceTwo2")
+	require.Equal(t, 16, s.Len())
+}
+
+func TestConvertToSet(t *testing.T) {
+	caseSlice := []int{1, 2, 3}
+	caseSliceTwo := []string{"1", "a", "b"}
+	s := New(caseSlice, caseSliceTwo)
+	require.Equal(t, 6, s.Len())
+	require.True(t, s.Contains(1))
+	require.True(t, s.Contains("1"))
+	require.True(t, s.Contains("b"))
+}
+
+func TestConvertToSlice(t *testing.T) {
+	caseSlice := []int{1, 2, 3}
+	caseSliceTwo := []string{"1", "a", "b"}
+	s := New(caseSlice, caseSliceTwo)
+	require.Equal(t, 6, s.Len())
+	arr := s.ToSlice()
+	require.Equal(t, 6, len(arr))
+	require.True(t, reflect.ValueOf(arr).Kind() == reflect.Slice)
+}
+
+func TestUnion(t *testing.T) {
+	caseSlice := []int{1, 2, 3}
+	caseSliceTwo := []int{3, 4, 5}
+	s1 := New(caseSlice)
+	require.Equal(t, 3, s1.Len())
+	s2 := New(caseSliceTwo)
+	require.Equal(t, 3, s2.Len())
+
+	// Union numbers
+	s3 := s1.Union(s2)
+	require.Equal(t, 5, s3.Len())
+	require.True(t, s3.Contains(1))
+	require.True(t, s3.Contains(5))
+	require.True(t, s3.Contains(3))
+
+	// Union other types
+	caseSliceThree := []interface{}{1, 4, 5, "1", "5"}
+	s4 := New(caseSliceThree)
+	s5 := s3.Union(s4)
+	require.Equal(t, 7, s5.Len())
+	require.True(t, s5.Contains(1))
+	require.True(t, s5.Contains(5))
+	require.True(t, s5.Contains("5"))
+}
+
+func TestIntersection(t *testing.T) {
+
+}
+func TestDifference(t *testing.T)      {}
+func TestFunctionElement(t *testing.T) {}
+func TestStructElement(t *testing.T)   {}
 func TestConcurrentAddElement10Goroutine100000Loop(t *testing.T) {
 	var wg sync.WaitGroup
 	s := New()
@@ -180,7 +270,7 @@ func TestConcurrentRemoveElement(t *testing.T) {
 	require.Equal(t, 0, s.Len())
 }
 
-func TestMembershipCheck(t *testing.T) {
+func TestConcurrentMembershipCheck(t *testing.T) {
 	var wg sync.WaitGroup
 
 	s := New()
