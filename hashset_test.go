@@ -206,19 +206,23 @@ func TestConcurrentAddElement100000Goroutine10Loop(t *testing.T) {
 	require.Equal(t, totalExpectElement, s.Len())
 }
 
-func TestConcurrentExclusiveLock100000Loop(t *testing.T) {
+func TestConcurrentExclusiveLock4Goroutine100000Loop(t *testing.T) {
+
 	var wg sync.WaitGroup
 
 	s := New()
-	numOfGoroutine := 2
+	numOfGoroutine := 4
 	numOfLoop := 100000
 	for idx := 0; idx < numOfLoop; idx++ {
-		key := strconv.Itoa(idx) + ".testing-" + strconv.Itoa(idx)
 		for nthGoroutine := 0; nthGoroutine < numOfGoroutine; nthGoroutine++ {
+			key := strconv.Itoa(idx) + ".testing-" + strconv.Itoa(nthGoroutine/2)
 			wg.Add(1)
 			go func(n int) {
 				defer wg.Done()
-				if n == 0 {
+				if n%2 == 0 {
+					for s.Contains(key) {
+						time.Sleep(time.Nanosecond)
+					}
 					s.Add(key)
 				} else {
 					for !s.Contains(key) {
@@ -230,7 +234,6 @@ func TestConcurrentExclusiveLock100000Loop(t *testing.T) {
 		}
 		wg.Wait()
 	}
-
 	wg.Wait()
 	require.Equal(t, 0, s.Len())
 }
