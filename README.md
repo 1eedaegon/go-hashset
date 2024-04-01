@@ -35,7 +35,7 @@ import (
 	s.Remove("3") // The length of s is 2, because due to the difference in types.
 ```
 
-Other case doc: 
+Other case doc: https://pkg.go.dev/github.com/1eedaegon/go-hashset
 
 ## License
 

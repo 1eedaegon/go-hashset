@@ -67,7 +67,7 @@ func (s *Set) Difference(set *Set) *Set {
 	diff := make(map[interface{}]bool)
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	for k := range s.hash {
+	for k, _ := range s.hash {
 		if _, exists := set.hash[k]; !exists {
 			diff[k] = true
 		}
@@ -79,7 +79,7 @@ func (s *Set) Difference(set *Set) *Set {
 func (s *Set) Do(f func(interface{})) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	for k := range s.hash {
+	for k, _ := range s.hash {
 		f(k)
 	}
 }
@@ -89,7 +89,7 @@ func (s *Set) Intersection(set *Set) *Set {
 	intersect := make(map[interface{}]bool)
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	for k := range s.hash {
+	for k, _ := range s.hash {
 		if _, exists := set.hash[k]; exists {
 			intersect[k] = true
 		}
@@ -111,7 +111,7 @@ func (s *Set) SubsetOf(set *Set) bool {
 	if s.Len() > set.Len() {
 		return false
 	}
-	for k := range s.hash {
+	for k, _ := range s.hash {
 		if _, exists := set.hash[k]; !exists {
 			return false
 		}
@@ -123,13 +123,13 @@ func (s *Set) SubsetOf(set *Set) bool {
 func (s *Set) Union(set *Set) *Set {
 	union := make(map[interface{}]bool)
 	s.mu.Lock()
-	for k := range s.hash {
+	for k, _ := range s.hash {
 		union[k] = true
 	}
 	s.mu.Unlock()
 
 	s.mu.Lock()
-	for k := range set.hash {
+	for k, _ := range set.hash {
 		union[k] = true
 	}
 	s.mu.Unlock()

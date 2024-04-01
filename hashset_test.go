@@ -132,6 +132,11 @@ func TestConvertToSlice(t *testing.T) {
 	arr := s.ToSlice()
 	require.Equal(t, 6, len(arr))
 	require.True(t, reflect.ValueOf(arr).Kind() == reflect.Slice)
+	require.Contains(t, arr, 1)
+	require.Contains(t, arr, 3)
+	require.Contains(t, arr, "1")
+	require.Contains(t, arr, "b")
+
 }
 
 func TestUnion(t *testing.T) {
