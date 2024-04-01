@@ -6,6 +6,7 @@ import (
 )
 
 // Set represents a thread-safe collection of unique elements.
+
 type Set struct {
 	mu   sync.RWMutex         // Guards access to the internal hash map.
 	hash map[interface{}]bool // Stores elements as keys with a boolean value.
@@ -20,6 +21,7 @@ func New(initialValue ...interface{}) *Set {
 		v := reflect.ValueOf(iv)
 		if v.Kind() == reflect.Slice {
 			for i := 0; i < v.Len(); i++ {
+				// TODO: Optimize destructuring slice
 				s.Add(v.Index(i).Interface())
 			}
 		} else {
