@@ -140,7 +140,7 @@ func (s *Set) Union(set *Set) *Set {
 func (s *Set) ToSlice() []interface{} {
 	uniTypeSlice := make([]interface{}, 0)
 	s.mu.RLock()
-	for key := range s.hash {
+	for key, _ := range s.hash {
 		uniTypeSlice = append(uniTypeSlice, key)
 	}
 	s.mu.RUnlock()
