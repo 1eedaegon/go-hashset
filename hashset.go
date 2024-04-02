@@ -1,6 +1,8 @@
 package hashset
 
 import (
+	"encoding/json"
+	"fmt"
 	"reflect"
 	"sync"
 )
@@ -145,6 +147,38 @@ func (s *Set) ToSlice() []interface{} {
 	}
 	s.mu.RUnlock()
 	return uniTypeSlice
+}
+
+func (s *Set) MarshalJSON() ([]byte, error) {
+	stringMap := make(map[string]bool)
+	// s.mu.RLock()
+	for k, v := range s.hash {
+		if reflect.TypeOf(k).Kind() == reflect.Func {
+			fmt.Printf("[WARN] Skipped function pointer value in set: %v (hashset - MarshalJSON)", k)
+			continue
+		}
+		key := fmt.Sprintf("%v", k)
+		stringMap[key] = v
+	}
+	// s.mu.RUnlock()
+	jsonByte, err := json.Marshal(stringMap)
+	if err != nil {
+		return nil, err
+	}
+	return jsonByte, nil
+}
+func (s *Set) UnmarshalJSON(data []byte) error {
+	stringMap := make(map[string]bool)
+	// Here, it is guaranteed that Unmarshal will be appropriate.
+	s.mu.Lock()
+	if err := json.Unmarshal(data, &stringMap); err != nil {
+		return err
+	}
+	s.mu.Unlock()
+	for k := range stringMap {
+		s.Add(k)
+	}
+	return nil
 }
 
 // MakeComparable returns pointer(address) not comparable types: slice, map, function

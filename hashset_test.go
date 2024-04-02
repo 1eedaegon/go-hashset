@@ -1,6 +1,7 @@
 package hashset
 
 import (
+	"encoding/json"
 	"reflect"
 	"strconv"
 	"sync"
@@ -127,8 +128,10 @@ func TestConvertToSet(t *testing.T) {
 func TestConvertToSlice(t *testing.T) {
 	caseSlice := []int{1, 2, 3}
 	caseSliceTwo := []string{"1", "a", "b"}
+	// Splitting slices
 	s := New(caseSlice, caseSliceTwo)
 	require.Equal(t, 6, s.Len())
+	// Converting set to slice
 	arr := s.ToSlice()
 	require.Equal(t, 6, len(arr))
 	require.True(t, reflect.ValueOf(arr).Kind() == reflect.Slice)
@@ -136,7 +139,6 @@ func TestConvertToSlice(t *testing.T) {
 	require.Contains(t, arr, 3)
 	require.Contains(t, arr, "1")
 	require.Contains(t, arr, "b")
-
 }
 
 func TestUnion(t *testing.T) {
@@ -170,6 +172,19 @@ func TestIntersection(t *testing.T) {
 func TestDifference(t *testing.T)      {}
 func TestFunctionElement(t *testing.T) {}
 func TestStructElement(t *testing.T)   {}
+
+func TestMarshalJSON(t *testing.T) {
+
+	caseSlice := []int{1, 2, 3}
+	caseSliceTwo := []string{"1", "a", "b"}
+	// Splitting slices
+	s := New(caseSlice, caseSliceTwo)
+	ms, err := json.Marshal(s)
+	require.NoError(t, err)
+	s2 := New()
+	err = json.Unmarshal(ms, s2)
+	require.NoError(t, err)
+}
 func TestConcurrentAddElement10Goroutine100000Loop(t *testing.T) {
 	var wg sync.WaitGroup
 	s := New()
